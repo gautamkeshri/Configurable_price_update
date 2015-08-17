@@ -15,12 +15,15 @@ class Configpriceupdate
 		return !Mage::helper('cataloginventory')->isShowOutOfStock();
 	}	
 	
-	private function getAssociated_least_price($configProd){
+	/*
+	@$configProd: int
+	@$inStock   : boolean
+	*/
+	private function getAssociated_least_price($configProd,$childProducts){
 		$localprice = array();
-		$childProducts = Mage::getModel('catalog/product_type_configurable')->getChildrenIds($configProd->getEntityId());
-		foreach ($childProducts[0] as $childid) {
+		foreach ($childProducts as $childid) {
 			$child = Mage::getModel('catalog/product')->load($childid);
-			if(($this->configStockcheck()) && ($configProd->getStatus() == 1)) 					// Check config stock setting
+			if($this->configStockcheck())
 			{					
 				if($child->getIsInStock()) 					// is_in_stock
 				{
@@ -40,30 +43,28 @@ class Configpriceupdate
 		return array_slice($localprice, 0, 1);
 	}
 	
-	private function getBestPriceCollection(){
-		if ($this->collectionConfigurable != NULL) {
-			foreach ($this->collectionConfigurable as $_product) {
-				$productid = Mage::getModel('catalog/product')->load($_product->getEntityId());
-				$childProducts = Mage::getModel('catalog/product_type_configurable')->getChildrenIds($_product->getEntityId());
-				if(count($childProducts[0]) > 0) {
-					$this->pricelist[$_product->getEntityId()] = $this->getAssociated_least_price($productid);
-				}
+	// private function getBestPriceCollection(){
+	// 	if ($this->collectionConfigurable != NULL) {
+	// 		foreach ($this->collectionConfigurable as $_product) {
+	// 			$productid = Mage::getModel('catalog/product')->load($_product->getEntityId());
+	// 			$childProducts = Mage::getModel('catalog/product_type_configurable')->getChildrenIds($_product->getEntityId());
+	// 			if(count($childProducts[0]) > 0) {
+	// 				$this->pricelist[$_product->getEntityId()] = $this->getAssociated_least_price($productid);
+	// 			}
 					
-			}
-			return $this->pricelist;
-		}
-	}
+	// 		}
+	// 		return $this->pricelist;
+	// 	}
+	// }
 	
-	private function getBestPrice() {
-		//$this->log_msg = "";
-		$this->getBestPriceCollection();
-		foreach ($this->collectionConfigurable as $_product) {
-			$this->log_msg = "";
-			$ConfigProduct = Mage::getModel('catalog/product')->load($_product->getEntityId());
-			$child_prod_id = explode("|",key($this->pricelist[$_product->getEntityId()])); 
+	private function setBestPrice($ConfigProduct,$bestpriceprod) {
+		$this->log_msg = "";
+		$child_prod_id = explode("|",key($bestpriceprod)); 
 			if(!empty($child_prod_id[0])){
+				
 				$ChildProduct = Mage::getModel('catalog/product')->load($child_prod_id[0]);
-				//If change in price
+
+				var_dump($ConfigProduct->getData());
 				if(($ConfigProduct->getPrice() != $ChildProduct->getPrice()) || ($ConfigProduct->getSpecialPrice() != $ChildProduct->getSpecialPrice())) {
 					//$ConfigProduct->setPrice($ChildProduct->getPrice()); 
 					//$ConfigProduct->setSpecialPrice($ChildProduct->getSpecialPrice()); 
@@ -77,64 +78,28 @@ class Configpriceupdate
 				}
 				echo $this->log_msg;		
 			}
-		}
+		
 		//return $this->log_msg;
 	}
+
 	public function main(){
-		$this->collectionConfigurable = Mage::getResourceModel('catalog/product_collection')->addAttributeToFilter('type_id', array('eq' => 'configurable'));
-		self::getBestPriceCollection();
-		var_dump($this->pricelist);die;
-		$email_msg = $configObj->setBestPrice();
-		return $email_msg;
-	}
+		$ConfigurableCollection = Mage::getResourceModel('catalog/product_collection')->addAttributeToFilter('type_id', array('eq' => 'configurable'));
+		if($ConfigurableCollection->count())
+		{
+			foreach($ConfigurableCollection as $configProd)
+			{
+				$childProducts = Mage::getModel('catalog/product_type_configurable')->getChildrenIds($configProd->getEntityId());
+			    if(count($childProducts[0]))
+			    {	
+			    	var_dump($configProd->getData());die;
+			        $bestproduct = $this->getAssociated_least_price($configProd,$childProducts[0]);
+			        $this->setBestPrice($ConfigProd,$bestproduct);   
+			    }
+			}	
+		} 	
+	}	
 }
 
-/*
-	case 1: nothing
-		Configurable product with No child 
-	
-	case 2: update with least
-		Configurable product with few in_stock and few out_of_stock product with show_out_of_stock = false
-
-
-	case 3: update with in_stock least
-		Configurable product with few in_stock and few out_of_stock product with show_out_of_stock = true	
-
-	case 4: update with in_stock least
-		Configurable product with all in_stock with show_out_of_stock = false
-
-	case 5: update with in_stock least
-		Configurable product with all out_of_stock with show_out_of_stock = false	
-
-	case 6: update with in_stock least
-		Configurable product with all in_stock with show_out_of_stock = true
-
-	case 7: update with in_stock least
-		Configurable product with all out_of_stock with show_out_of_stock = true
-
-
-	//######################################
-	
-	$prodCollection = $configurable->getCollecttion('configurable'); 
-	$UpdatePriceCollection = getBestPriceCollection();
-	$pricelist = array();
-
-	foreach($prodCollection){
-		if(has_child($prodCollection)){
-			$show_out_of_stock => system->inventory -> show_out_of_stock (boolean)
-			if($show_out_of_stock){
-				$ChildProdId = getAssociated_least_price($ConfigProdId,true);
-			}else{
-				$ChildProdId = getAssociated_least_price($ConfigProdId,false);
-			}
-			setBestPrice($ConfigProdId,$ChildProdId);	
-		}else{
-			// Do nothing as no child
-		}
-	}
-		
-	//######################################
-*/
 $configObj = new Configpriceupdate();
 $email_msg = $configObj->main();
 var_dump($email_msg);
