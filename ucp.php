@@ -44,23 +44,23 @@ class Configpriceupdate
 		$this->log_msg = "";
 		$child_prod_id = explode("|",key($bestpriceprod)); 
 			if(!empty($child_prod_id[0])){
-				
+				$confprod = Mage::getModel('catalog/product')->load($ConfigProduct->getEntityId());
 				$ChildProduct = Mage::getModel('catalog/product')->load($child_prod_id[0]);
-				if(($ConfigProduct->getPrice() != $ChildProduct->getPrice()) || ($ConfigProduct->getSpecialPrice() != $ChildProduct->getSpecialPrice())) {
-					//$ConfigProduct->setPrice($ChildProduct->getPrice()); 
-					//$ConfigProduct->setSpecialPrice($ChildProduct->getSpecialPrice()); 
-					//$ConfigProduct->save();
-					$childstock = $ChildProduct->getStockItem();
-
+				if(($confprod->getPrice() != $ChildProduct->getPrice()) || ($confprod->getSpecialPrice() != $ChildProduct->getSpecialPrice())) {
+					//$confprod->setPrice($ChildProduct->getPrice()); 
+					//$confprod->setSpecialPrice($ChildProduct->getSpecialPrice()); 
+					//$confprod->save();
+					
+					//$childstock = $ChildProduct->getStockItem();
 					//$this->log_msg .= "Config price: ".$ConfigProduct->getPrice()." Config Sprice: ".$ConfigProduct->getSpecialPrice()." is_in_stock: ".$ConfigProduct->isInStock()." is saleable: ".$ConfigProduct->isSaleable()." is Avilable: ".$ConfigProduct->isAvailable()."\r\n";
 					//$this->log_msg = " Best Price : ".$ChildProduct->getPrice()." Best Sprice:".$ChildProduct->getSpecialPrice()." is_in_stock: ".$childstock->getIsInStock()." is saleable: ".$ChildProduct->isSaleable()." is Avilable: ".$ConfigProduct->isAvailable()."\r\n";
-					$this->log_msg .= "Config Sku: ".$ConfigProduct->getSku()." Config price: ".$ConfigProduct->getPrice()." Config Sprice: ".$ConfigProduct->getSpecialPrice()."\r\n";
-					$this->log_msg .= "Simple Sku: ".$ChildProduct->getSku()." Best Price : ".$ChildProduct->getPrice()." Best Sprice:".$ChildProduct->getSpecialPrice()."\r\n"; 
+					echo "Config Sku: ".$confprod->getSku()." Config price: ".$confprod->getPrice()." Config Sprice: ".$confprod->getSpecialPrice()."\r\n";
+					echo "Simple Sku: ".$ChildProduct->getSku()." Best Price : ".$ChildProduct->getPrice()." Best Sprice:".$ChildProduct->getSpecialPrice()."\r\n"; 
 				}
 				//echo $this->log_msg;		
 			}
 		
-		return $this->log_msg;
+//		return $this->log_msg;
 	}
 
 	public function main(){
@@ -74,7 +74,7 @@ class Configpriceupdate
 			    {	
 			        $bestproduct = $this->getAssociated_least_price($configProd,$childProducts[0]);
 			        $this->setBestPrice($configProd,$bestproduct);   
-			        echo $this->log_msg;
+			        //echo $this->log_msg;
 			    }
 			}	
 		} 	
